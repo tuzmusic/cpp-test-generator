@@ -24,7 +24,7 @@ describe("app", () => {
     it('stubs tests for each public function, and numbers duplicates/overloads', () => {
       const gen = new TestGenerator(thisClassName, fileText);
 
-      const publics = ['Create1', 'Create2', 'Destroy'];
+      const publics = ['Create_overload_1', 'Create_overload_2', 'Destroy'];
       publics.forEach(fnName => {
         expect(gen.getFileInfoObject().unitTests.fileText)
           .toEqual(expect.stringContaining(`TEST_F(${ thisClassName }Test, ${ fnName })`));
