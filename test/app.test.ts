@@ -20,14 +20,19 @@ describe("app", () => {
 
     // in a function to make sure we get it fresh every time
     const getLines = () => fileText.replace(/\r\n/g, '\n').split('\n');
+    let gen: TestGenerator;
 
+    afterEach(() => {
+      console.log(gen.getFileInfoObject().fixtureHeader.fileText);
+      console.log(gen.getFileInfoObject().unitTests.fileText);
+    });
     it('stubs tests for each public function, and numbers duplicates/overloads', () => {
-      const gen = new TestGenerator(thisClassName, fileText);
+      gen = new TestGenerator(thisClassName, fileText);
 
       const publics = ['Create_overload_1', 'Create_overload_2', 'Destroy'];
       publics.forEach(fnName => {
         expect(gen.getFileInfoObject().unitTests.fileText)
-          .toEqual(expect.stringContaining(`TEST_F(${ thisClassName }Test, ${ fnName })`));
+          .toEqual(expect.stringContaining(`TEST_F ( ${ thisClassName }Test, ${ fnName } )`));
       });
     });
 

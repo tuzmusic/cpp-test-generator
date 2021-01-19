@@ -1,3 +1,5 @@
+import snakeCase from 'lodash.snakecase';
+
 type FileObject = {
   fileName: string;
   fileText: string;
@@ -37,6 +39,7 @@ export class TestGenerator {
     this.fileText = this.fileText.split('private:')[0];
 
     this.createInfoObjects();
+    this.generateHeaderFile();
     this.generateUnitTests();
   }
 
@@ -89,14 +92,14 @@ export class TestGenerator {
       methods.push(method);
     });
     this.methods = methods;
-    console.log(JSON.stringify(methods, null, 2));
+    // console.log(JSON.stringify(methods, null, 2));
   }
 
   private generateUnitTests() {
-    const { className, methods } = this;
+    const { className } = this;
     const headerLines = [
       // todo
-      `#include "../GeneratedTests/${ className }.h"`,
+      `#include "../GeneratedTests/${ className }.h" // TODO: navigate to the correct source folder`,
       `#include "${ className }.h"`,
       `#include "gtest/gtest.h"`,
       "",
@@ -117,7 +120,7 @@ export class TestGenerator {
       }
 
       // manage overloads
-      const methodsWithThisName = methods.filter(m => m.name === name);
+      const methodsWithThisName = this.methods.filter(m => m.name === name);
       if (methodsWithThisName.length > 1) {
         const methodFromArray = methodsWithThisName.find(m => m.signature === signature);
         const indexOfOverload = methodsWithThisName.indexOf(methodFromArray);
@@ -140,12 +143,38 @@ export class TestGenerator {
 
     const footerLine = ['}'];
 
-    const outText = [
+    this.unitTests.fileText = [
       ...headerLines,
       ...(methodTestLines.map(line => '\t' + line)),
       ...footerLine,
     ].join('\n');
-    console.log(outText);
-    this.unitTests.fileText = outText;
+  }
+
+  private generateHeaderFile() {
+    const header = snakeCase(this.className).toUpperCase() + "_H";
+    const testName = this.className + "Test";
+    this.fixtureHeader.fileText = `
+#ifndef ${ header }
+#define ${ header }
+
+#include "gtest/gtest.h"
+
+namespace Test
+{
+  class ${ testName } : public testing::Test
+  {
+  public:
+    ${ testName }();
+
+    virtual ~${ testName }();
+
+  protected:
+    virtual void SetUp() override;
+    virtual void TearDown() override;
+  };
+}
+
+#endif //${ header }`;
+
   }
 }
