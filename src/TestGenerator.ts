@@ -150,6 +150,31 @@ export class TestGenerator {
     ].join('\n');
   }
 
+  private generateFixtureSourceFile() {
+    const { className } = this;
+    const testName = this.className + "Test";
+
+    this.fixtureSource.fileText = `
+#include "${ className }.h"
+
+${ testName }::${ testName }() {
+
+}
+
+${ testName }::~${ testName }() {
+
+}
+    
+void ${ testName }::SetUp() {
+
+}
+   
+void ${ testName }::TearDown() {
+
+}    
+`;
+  }
+
   private generateHeaderFile() {
     const header = snakeCase(this.className).toUpperCase() + "_H";
     const testName = this.className + "Test";
@@ -174,7 +199,7 @@ namespace Test
   };
 }
 
-#endif //${ header }`;
-
+#endif //${ header }
+`;
   }
 }

@@ -16,7 +16,8 @@
     },
     "dependencies": {
       "dotenv": "^8.2.0",
-      "lodash.snakecase": "^4.1.1"
+      "lodash.snakecase": "^4.1.1",
+      "yargs": "^16.2.0"
     },
     "devDependencies": {
       "@types/chai": "^4.2.3",
@@ -33,6 +34,6 @@
       "nodemon": "^1.19.2",
       "ts-jest": "^24.1.0",
       "ts-node": "^8.4.1",
-        "typescript": "^3.6.3"
+      "typescript": "^3.6.3"
     }
 }

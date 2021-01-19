@@ -24,6 +24,7 @@ describe("app", () => {
 
     afterEach(() => {
       console.log(gen.getFileInfoObject().fixtureHeader.fileText);
+      console.log(gen.getFileInfoObject().fixtureSource.fileText);
       console.log(gen.getFileInfoObject().unitTests.fileText);
     });
     it('stubs tests for each public function, and numbers duplicates/overloads', () => {
