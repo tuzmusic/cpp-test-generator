@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import yargs from 'yargs';
 
+// TODO: this currently returns the list of all files.
+//  we should instead have it search and return the match.
 export async function asyncWalk(fullPath: string): Promise<string[]> {
   const walk = (dir: string, done: Function) => {
     let results: any[] = [];
@@ -49,6 +51,7 @@ export function defineYargs() {
   }).option('appGroup', {
     alias: 'a',
     description: 'The application group for the test. The fixture files will be written to "../${appGroup}", and in the VS project all the test files will go into the folder/filter for the appGroup',
+    default: 'GeneratedTests',
     type: 'string',
   })
     .option('sourcePath', {

@@ -8,6 +8,7 @@ type FilesInfoObject = {
   fixtureHeader: FileObject;
   fixtureSource: FileObject;
   unitTests: FileObject;
+  methods: MethodInfo[];
 }
 
 interface MethodInfo {
@@ -28,18 +29,15 @@ export class TestGenerator {
   private fixtureHeader: FileObject;
   private fixtureSource: FileObject;
   private unitTests: FileObject;
-  private fileLines: string[];
   private methods: MethodInfo[] = [];
 
-  constructor(private className: string, private fileText: string) {
-    // split the file lines. not sure how we're going to want them.
-    this.fileLines = this.fileText.replace(/\r\n/g, '\n').split('\n');
-
-    // remove everything after private
+  constructor(private className: string, private fileText: string, private appGroup: string = "GeneratedTests") {
+    // remove everything after "private"
     this.fileText = this.fileText.split('private:')[0];
 
     this.createInfoObjects();
-    this.generateHeaderFile();
+    this.generateFixtureHeaderFile();
+    this.generateFixtureSourceFile();
     this.generateUnitTests();
   }
 
@@ -49,6 +47,7 @@ export class TestGenerator {
       fixtureHeader: { ...fixtureHeader },
       fixtureSource: { ...fixtureSource },
       unitTests: { ...unitTests },
+      methods: JSON.parse(JSON.stringify(this.methods)),
     };
   }
 
@@ -96,10 +95,10 @@ export class TestGenerator {
   }
 
   private generateUnitTests() {
-    const { className } = this;
+    const { className, appGroup } = this;
     const headerLines = [
       // todo
-      `#include "../GeneratedTests/${ className }.h" // TODO: navigate to the correct source folder`,
+      `#include "../${ appGroup }/${ className }Test.h"`,
       `#include "${ className }.h"`,
       `#include "gtest/gtest.h"`,
       "",
@@ -150,32 +149,7 @@ export class TestGenerator {
     ].join('\n');
   }
 
-  private generateFixtureSourceFile() {
-    const { className } = this;
-    const testName = this.className + "Test";
-
-    this.fixtureSource.fileText = `
-#include "${ className }.h"
-
-${ testName }::${ testName }() {
-
-}
-
-${ testName }::~${ testName }() {
-
-}
-    
-void ${ testName }::SetUp() {
-
-}
-   
-void ${ testName }::TearDown() {
-
-}    
-`;
-  }
-
-  private generateHeaderFile() {
+  private generateFixtureHeaderFile() {
     const header = snakeCase(this.className).toUpperCase() + "_H";
     const testName = this.className + "Test";
     this.fixtureHeader.fileText = `
@@ -200,6 +174,31 @@ namespace Test
 }
 
 #endif //${ header }
+`;
+  }
+
+  private generateFixtureSourceFile() {
+    const { className } = this;
+    const testName = this.className + "Test";
+
+    this.fixtureSource.fileText = `
+#include "${ className }.h"
+
+${ testName }::${ testName }() {
+
+}
+
+${ testName }::~${ testName }() {
+
+}
+    
+void ${ testName }::SetUp() {
+
+}
+   
+void ${ testName }::TearDown() {
+
+}    
 `;
   }
 }
