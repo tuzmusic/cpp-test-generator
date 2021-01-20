@@ -55,6 +55,15 @@ function addToWindowsProject(generator: TestGenerator, fullTestPath: string) {
   };
   //endregion SETUP
 
+  if (projectFileText.includes(newInfo.fixtureHeader.fileName)) {
+    const errorStr = ["It looks like the files were already included in the project.",
+      `"${ newInfo.fixtureHeader.fileName }" was found in the project file.`,
+      "Duplicate includes in these project files will cause problem, so the script will now quit.",
+    ].join('\n');
+    console.log(errorStr);
+    return;
+  }
+
   Object.values(newInfo).forEach(generateTag);
 
   //region INCLUDE IN PROJECT
@@ -97,6 +106,8 @@ function addToWindowsProject(generator: TestGenerator, fullTestPath: string) {
   // todo: write the files (back up first???)
   fs.writeFileSync(projectPath, newProjectFileText);
   fs.writeFileSync(projectPath + '.filters', newFilterFileText);
+
+  console.log("DONE.");
 }
 
 function writeTestFiles(generator: TestGenerator, fullTestPath: string) {
@@ -112,6 +123,8 @@ function writeTestFiles(generator: TestGenerator, fullTestPath: string) {
   fs.writeFileSync(fixtureHeaderPath, fixtureHeader.fileText);
   fs.writeFileSync(fixtureSourcePath, fixtureSource.fileText);
   fs.writeFileSync(unitTestsPath, unitTests.fileText);
+
+  console.log("DONE.");
 }
 
 async function run(fullPath: string) {
@@ -147,16 +160,17 @@ async function run(fullPath: string) {
 
   const generator = new TestGenerator(className, fileText, appGroup);
 
-  console.log(generator.getFileInfoObject().fixtureHeader.fileText);
-  console.log(generator.getFileInfoObject().fixtureSource.fileText);
-  console.log(generator.getFileInfoObject().unitTests.fileText);
+  // console.log(generator.getFileInfoObject().fixtureHeader.fileText);
+  // console.log(generator.getFileInfoObject().fixtureSource.fileText);
+  // console.log(generator.getFileInfoObject().unitTests.fileText);
 
   // make the fixtures (app group) folder if needed
   const fullTestPath = path.resolve(testPath, appGroup);
 
+  console.log("Writing test files...");
   writeTestFiles(generator, fullTestPath);
-  // console.log("Files created!");
-
+  console.log();
+  console.log("Including new files in project...");
   addToWindowsProject(generator, path.resolve(testPath));
 }
 
