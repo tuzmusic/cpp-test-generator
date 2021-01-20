@@ -182,21 +182,25 @@ namespace Test
 
     this.fixtureSource.fileText = `#include "${ className }Test.h"
 
-${ testName }::${ testName }() {
-
-}
-
-${ testName }::~${ testName }() {
-
-}
-    
-void ${ testName }::SetUp() {
-
-}
-   
-void ${ testName }::TearDown() {
-
-}    
+namespace Test
+{
+  
+  ${ testName }::${ testName }() {
+  
+  }
+  
+  ${ testName }::~${ testName }() {
+  
+  }
+      
+  void ${ testName }::SetUp() {
+  
+  }
+     
+  void ${ testName }::TearDown() {
+  
+  } 
+}   
 `;
   }
 }
