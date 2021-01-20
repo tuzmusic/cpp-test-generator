@@ -44,11 +44,13 @@ export async function asyncWalk(fullPath: string): Promise<string[]> {
 }
 
 export function defineYargs() {
-  return yargs.option('className', {
-    alias: 'c',
-    description: 'The name of the class to generate files for.',
-    type: 'string',
-  })
+  return yargs
+    .option('className', {
+      alias: 'c',
+      description: 'The name of the class to generate files for.',
+      // default: '',
+      type: 'string',
+    })
     .option('force', {
       alias: 'f',
       description: 'Write files even if they already exist, without asking.',
@@ -59,7 +61,7 @@ export function defineYargs() {
       alias: 'a',
       description: 'The application group for the test. The fixture files will be written to "../${appGroup}", ' +
         'and in the VS project all the test files will go into the folder/filter for the appGroup',
-      default: 'GeneratedTests',
+      // default: 'GeneratedTests',
       type: 'string',
     })
     .option('sourcePath', {

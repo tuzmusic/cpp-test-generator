@@ -9,7 +9,40 @@ type FullInfo = FileObject & { includeTag: string; filterTag: string }
 
 // define at top, to capture variables
 // yeah, this should all be a class.
-const { className, appGroup, sourcePath, testPath, force, projectPath } = defineYargs();
+const args = defineYargs();
+const { sourcePath, testPath, force, projectPath } = args;
+let { className, appGroup } = args;
+
+async function handleEmptyArgs() {
+  const classSchema = {
+    properties: {
+      _className: {
+        description: 'Enter the name of the class you want to test. Just the name, no extension.',
+        type: 'string',
+      },
+    },
+  };
+  const groupSchema = {
+    properties: {
+      _appGroup: {
+        description: 'Enter the name of the group where these tests should go.',
+        type: 'string',
+        default: 'GeneratedTests',
+      },
+    },
+  };
+
+  if (!className) {
+    prompt.start();
+    const { _className } = await prompt.get(classSchema);
+    className = _className;
+  }
+  if (!appGroup) {
+    prompt.start();
+    const { _appGroup } = await prompt.get(groupSchema);
+    appGroup = _appGroup;
+  }
+}
 
 // TODO: addToQNIXProject!
 // todo: check whether it's there already
@@ -54,7 +87,6 @@ function addToWindowsProject(generator: TestGenerator, fullTestPath: string) {
     fileInfo.filterTag = `<ClInclude ${ tagContent }>\n\t\t\t<Filter>${ appGroup }</Filter>\n\t\<t></t></ClInclude>`;
   };
   //endregion SETUP
-
   if (projectFileText.includes(newInfo.fixtureHeader.fileName)) {
     const errorStr = ["It looks like the files were already included in the project.",
       `"${ newInfo.fixtureHeader.fileName }" was found in the project file.`,
@@ -128,6 +160,8 @@ function writeTestFiles(generator: TestGenerator, fullTestPath: string) {
 }
 
 async function run(fullPath: string) {
+  await handleEmptyArgs();
+
   const ALLFilesInSourcePath = await asyncWalk(fullPath);
   const existingFixtures = ALLFilesInSourcePath.filter(file => file.match(RegExp(`${appGroup}\.${className}`)));
   const existingUnitTests = ALLFilesInSourcePath.filter(file => file.match(RegExp(`${className}UnitTest`)));
@@ -138,7 +172,7 @@ async function run(fullPath: string) {
 
   // TODO: allow "force" option
   if (!force && existingTests.length) {
-    const promptSchema = {
+    const proceedSchema = {
       properties: {
         shouldProceed: {
           description: 'Proceed anyway and overwrite the files? [Y/n]',
@@ -150,7 +184,7 @@ async function run(fullPath: string) {
 
     console.log("\nWARNING: Tests already exist at:\n\t", existingTests);
     prompt.start();
-    const { shouldProceed } = await prompt.get(promptSchema);
+    const { shouldProceed } = await prompt.get(proceedSchema);
     if (shouldProceed.toLowerCase() !== 'y') return;
   }
 
