@@ -5,6 +5,8 @@ import * as path from 'path';
 // @ts-ignore
 import prompt from 'prompt';
 
+type FullInfo = FileObject & { includeTag: string; filterTag: string }
+
 // define at top, to capture variables
 // yeah, this should all be a class.
 const { className, appGroup, sourcePath, testPath, force, projectPath } = defineYargs();
@@ -12,50 +14,51 @@ const { className, appGroup, sourcePath, testPath, force, projectPath } = define
 // TODO: addToQNIXProject!
 // todo: check whether it's there already
 function addToWindowsProject(generator: TestGenerator, fullTestPath: string) {
-  type FullInfo = FileObject & { includeTag: string; filterTag: string }
+
+  //region SETUP
   const newInfo = generator.getFileInfoObject();
 
-  /* generate tags */
-  // pre-prepare the path.
-  // we can't use path.resolve because we want to keep
-  // it as a relative path, for the project file.
+  // we can't use path.resolve because we want to keep it as a relative path, for the project file.
   const [relativePath, separator] = fullTestPath.match(/(source(\S)test.*)/).slice(1); // get end of path
   const pathElements = relativePath.split(separator);
 
-  function generateTags() {
-    Object.values(newInfo).forEach((fileInfo: FileObject & { includeTag: string; filterTag: string }) => {
-      // newInfo includes the methods object, which we actually want to ignore
-      if (!fileInfo.fileName) return;
-
-      // construct the actual path for this file
-      const fullIncludePath = [
-        '..', '..', ...pathElements, // relative path
-        fileInfo.fileName.includes('UnitTest') ? 'UnitTests' : appGroup, // containing folder within test project
-        fileInfo.fileName,
-      ].join(separator);
-
-      const tagContent = `Include="${ fullIncludePath }"`;
-      fileInfo.includeTag = `<ClCompile ${ tagContent } />`;
-      fileInfo.filterTag = `<ClInclude ${ tagContent }>\n\t\t<Filter>${ appGroup }</Filter>\n\t</ClInclude>`;
-    });
-  }
-
-// actually generate the tags (including for the filter, to be used later)
-  generateTags();
-
-  //region INCLUDE IN PROJECT
-  // place in appropriate item group
+  // get text from the files
   const projectFileText = fs.readFileSync(projectPath).toString();
-  const groupEnder = "</ItemGroup>";
-  const itemGroupRegex = /<ItemGroup>([^]*?)<\/ItemGroup>/g;
-  const [sourceGroup, headerGroup] = projectFileText.match(itemGroupRegex).slice(1);
+  const filterFileText = fs.readFileSync(projectPath + '.filters').toString();
 
+  // info for parsing/reconstructing the markup
+  const groupEnder = "</ItemGroup>";
+  // too problematic to use the variable with all the slashes/escapes
+  const itemGroupRegex = /<ItemGroup>([^]*?)<\/ItemGroup>/g;
+
+  // convenience functions
   const placeTagAtEnd = (sourceStr: string, key: keyof FullInfo, info: FullInfo): string =>
     sourceStr.replace(groupEnder, `\t${ info[key] }\n${ groupEnder }`);
-
   const placeFileTagAtEnd = (src: string, info: FullInfo): string => placeTagAtEnd(src, 'includeTag', info);
   const placeFilterTagAtEnd = (src: string, info: FullInfo): string => placeTagAtEnd(src, 'filterTag', info);
 
+  // captures pathElements
+  const generateTag = (fileInfo: FileObject & { includeTag: string; filterTag: string }) => {
+    // newInfo includes the methods object, which we actually want to ignore
+    if (!fileInfo.fileName) return;
+
+    // construct the actual path for this file
+    const fullIncludePath = [
+      '..', '..', ...pathElements, // relative path
+      fileInfo.fileName.includes('UnitTest') ? 'UnitTests' : appGroup, // containing folder within test project
+      fileInfo.fileName,
+    ].join(separator);
+
+    const tagContent = `Include="${ fullIncludePath }"`;
+    fileInfo.includeTag = `<ClCompile ${ tagContent } />`;
+    fileInfo.filterTag = `<ClInclude ${ tagContent }>\n\t\t<Filter>${ appGroup }</Filter>\n\t</ClInclude>`;
+  };
+  //endregion SETUP
+
+  Object.values(newInfo).forEach(generateTag);
+
+  //region INCLUDE IN PROJECT
+  const [sourceGroup, headerGroup] = projectFileText.match(itemGroupRegex).slice(1);
   // place source file at end of source group
   let newSource = placeFileTagAtEnd(sourceGroup, newInfo.fixtureSource as FullInfo);
   // place unit test file at end of source group (using the result of the last call)
@@ -69,11 +72,8 @@ function addToWindowsProject(generator: TestGenerator, fullTestPath: string) {
   //endregion
 
   //region INCLUDE IN FILTER
-  // place in appropriate item group
-  const filterFileText = fs.readFileSync(projectPath + '.filters').toString();
   // todo: create the group if needed
   const [filterSourceGroup, filterHeaderGroup] = filterFileText.match(itemGroupRegex).slice(1);
-
   // place source file at end of source group
   let newFilterSource = placeFilterTagAtEnd(filterSourceGroup, newInfo.fixtureSource as FullInfo);
   // place unit test file at end of source group (using the result of the last call)
