@@ -48,12 +48,20 @@ export function defineYargs() {
     alias: 'c',
     description: 'The name of the class to generate files for.',
     type: 'string',
-  }).option('appGroup', {
-    alias: 'a',
-    description: 'The application group for the test. The fixture files will be written to "../${appGroup}", and in the VS project all the test files will go into the folder/filter for the appGroup',
-    default: 'GeneratedTests',
-    type: 'string',
   })
+    .option('force', {
+      alias: 'f',
+      description: 'Write files even if they already exist, without asking.',
+      type: 'boolean',
+      default: false,
+    })
+    .option('appGroup', {
+      alias: 'a',
+      description: 'The application group for the test. The fixture files will be written to "../${appGroup}", ' +
+        'and in the VS project all the test files will go into the folder/filter for the appGroup',
+      default: 'GeneratedTests',
+      type: 'string',
+    })
     .option('sourcePath', {
       alias: 's',
       description: 'Absolute path to the source code folder, where the header file will be found.',
@@ -61,7 +69,14 @@ export function defineYargs() {
     })
     .option('testPath', {
       alias: 't',
-      description: 'Absolute path to the tests folder. It is assumed that this folder has subfolders for app groups, and a folder called "UnitTests" for the test files.',
+      description: 'Absolute path to the tests folder. It is assumed that this folder has subfolders for app groups,' +
+        ' and a folder called "UnitTests" for the test files.',
+      type: 'string',
+    })
+    .option('projectPath', {
+      alias: 'p',
+      description: 'The project file (.vcxproj) for the project in which to include the new files. ' +
+        'The .vcxproj and its corresponding .vcxproj.filters files will be used.',
       type: 'string',
     })
     // .demandOption(['className', 'sourcePath'], 'You must provide a className and a sourcePath (where the header file will be found)')

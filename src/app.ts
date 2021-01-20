@@ -1,15 +1,73 @@
 import fs from 'fs';
-import { TestGenerator } from './TestGenerator';
+import { FileObject, TestGenerator } from './TestGenerator';
 import { asyncWalk, defineYargs } from './runHelpers';
 import * as path from 'path';
 // @ts-ignore
 import prompt from 'prompt';
 
-const { className, appGroup, sourcePath, testPath } = defineYargs();
+// define at top, to capture variables
+// yeah, this should all be a class.
+const { className, appGroup, sourcePath, testPath, force, projectPath } = defineYargs();
+
+// TODO: addToQNIXProject!
+function addToWindowsProject(generator: TestGenerator, fullTestPath: string) {
+  /* 1 include in project */
+  // fulltest path C:\Users\jtuzman\dev\Titan\source\framework\framework\source\test\unit\FrameworkUnitTests\Boot
+  // <ClCompile Include="..\..\source\test\unit\FrameworkUnitTests\Boot\DataStoreTest.h" />
+  // <ClCompile Include="..\..\source\test\unit\FrameworkUnitTests\Boot\DataStoreTest.h" />
+
+  // generate tags
+  const [relativePath, separator] = fullTestPath.match(/(source(\S)test.*)/).slice(1); // get end of path
+  const pathElements = relativePath.split(separator);
+
+  type FullInfo = FileObject & { includeTag: string; filterTag: string }
+  const newInfo = generator.getFileInfoObject();
+
+  // generate tags
+  Object.values(newInfo).forEach((item: FileObject & { includeTag: string; filterTag: string }) => {
+    const fullIncludePath = ['..', '..', ...pathElements, item.fileName].join(separator);
+    const tagContent = `ClCompile Include="${ fullIncludePath }"`;
+    item.includeTag = `<${ tagContent } />`;
+    item.filterTag = `<${ tagContent }>\n\t<Filter>${ appGroup }</Filter>\n\t</ClCompile>`;
+  });
+
+  // place in appropriate item group
+  const projectFile = fs.readFileSync(projectPath).toString();
+  const groupEnder = "</ItemGroup>";
+  const [sourceGroup, headerGroup] = projectFile.match(/\<ItemGroup\>([^]*?)\<\/ItemGroup\>/g).slice(1);
+
+  // PLACE SOURCE FILE AT END OF SOURCE GROUP
+  const newSource = sourceGroup.replace(groupEnder,
+    `\t${ (newInfo.fixtureSource as FullInfo).includeTag }\n${ groupEnder }`,
+  );
+
+  // PLACE HEADER FILE
+  const newHeader = headerGroup.replace(groupEnder,
+    `\t${ (newInfo.fixtureHeader as FullInfo).includeTag }\n${ groupEnder }`,
+  );
+
+  /* 2 include in filter */
+  // generate tag
+  // place in appropriate item group
+}
+
+function writeFiles(generator: TestGenerator, fullTestPath: string) {
+  const { fixtureSource, unitTests, fixtureHeader } = generator.getFileInfoObject();
+
+  if (!fs.existsSync(fullTestPath))
+    fs.mkdirSync(fullTestPath, { recursive: true });
+
+  const fixtureHeaderPath = path.resolve(fullTestPath, fixtureHeader.fileName);
+  const fixtureSourcePath = path.resolve(fullTestPath, fixtureSource.fileName);
+  const unitTestsPath = path.resolve(testPath, "UnitTests", unitTests.fileName);
+
+  fs.writeFileSync(fixtureHeaderPath, fixtureHeader.fileText);
+  fs.writeFileSync(fixtureSourcePath, fixtureSource.fileText);
+  fs.writeFileSync(unitTestsPath, unitTests.fileText);
+}
 
 async function run(fullPath: string) {
   const ALLFilesInSourcePath = await asyncWalk(fullPath);
-
   const existingFixtures = ALLFilesInSourcePath.filter(file => file.match(RegExp(`${appGroup}\.${className}`)));
   const existingUnitTests = ALLFilesInSourcePath.filter(file => file.match(RegExp(`${className}UnitTest`)));
   const existingTests = [
@@ -18,7 +76,7 @@ async function run(fullPath: string) {
   ];
 
   // TODO: allow "force" option
-  if (existingTests.length) {
+  if (!force && existingTests.length) {
     const promptSchema = {
       properties: {
         shouldProceed: {
@@ -43,21 +101,17 @@ async function run(fullPath: string) {
 
   const generator = new TestGenerator(className, fileText, appGroup);
 
-  console.log("Files created!");
   // console.log(generator.getFileInfoObject().fixtureHeader.fileText);
   // console.log(generator.getFileInfoObject().fixtureSource.fileText);
   // console.log(generator.getFileInfoObject().unitTests.fileText);
 
   // make the fixtures (app group) folder if needed
   const fullTestPath = path.resolve(testPath, appGroup);
-  if (!fs.existsSync(fullTestPath))
-    fs.mkdirSync(fullTestPath, { recursive: true });
 
-  const { fixtureSource, unitTests, fixtureHeader } = generator.getFileInfoObject();
+  writeFiles(generator, fullTestPath);
+  console.log("Files created!");
 
-  fs.writeFileSync(path.resolve(fullTestPath, fixtureHeader.fileName), fixtureHeader.fileText);
-  fs.writeFileSync(path.resolve(fullTestPath, fixtureSource.fileName), fixtureSource.fileText);
-  fs.writeFileSync(path.resolve(testPath, "UnitTests", unitTests.fileName), unitTests.fileText);
+  addToWindowsProject(generator, fullTestPath);
 }
 
 // TODO: Make sure source path parses correctly.

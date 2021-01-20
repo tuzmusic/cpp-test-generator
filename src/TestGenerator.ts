@@ -1,19 +1,20 @@
 import snakeCase from 'lodash.snakecase';
 
-type FileObject = {
+export type FileObject = {
   fileName: string;
   fileText: string;
-}
-type FilesInfoObject = {
-  fixtureHeader: FileObject;
-  fixtureSource: FileObject;
-  unitTests: FileObject;
-  methods: MethodInfo[];
 }
 
 interface MethodInfo {
   name: string;
   signature: string;
+}
+
+export type FilesInfoObject = {
+  fixtureHeader: FileObject;
+  fixtureSource: FileObject;
+  unitTests: FileObject;
+  methods: MethodInfo[];
 }
 
 /*
