@@ -98,7 +98,6 @@ export class TestGenerator {
   private generateUnitTests() {
     const { className, appGroup } = this;
     const headerLines = [
-      // todo
       `#include "../${ appGroup }/${ className }Test.h"`,
       `#include "${ className }.h"`,
       `#include "gtest/gtest.h"`,
@@ -153,8 +152,7 @@ export class TestGenerator {
   private generateFixtureHeaderFile() {
     const header = snakeCase(this.className).toUpperCase() + "_H";
     const testName = this.className + "Test";
-    this.fixtureHeader.fileText = `
-#ifndef ${ header }
+    this.fixtureHeader.fileText = `#ifndef ${ header }
 #define ${ header }
 
 #include "gtest/gtest.h"
@@ -182,8 +180,7 @@ namespace Test
     const { className } = this;
     const testName = this.className + "Test";
 
-    this.fixtureSource.fileText = `
-#include "${ className }.h"
+    this.fixtureSource.fileText = `#include "${ className }Test.h"
 
 ${ testName }::${ testName }() {
 
